@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 import random
 from typing import List, Tuple
 from desires import Desire, EatDesire, MoveDesire
-from utils import CompassDirection
+from utils import CompassDirection, View
 import logging
 
 logger = logging.getLogger(__name__)
@@ -61,16 +61,30 @@ class Person(MovableGameObject):
         self.Stomach = 100
         self.Metabolism = 0.2
 
+    def look_for_food(self, view: View):
+        list_of_directions_and_things = view.shuffle_all_but_center()
+        
+        for direction, thing_list in list_of_directions_and_things:
+            for thing in thing_list:
+                if isinstance(thing, Food):
+                    logger.debug("Person found food!")
+                    return (thing, direction)
+        
+        return (None, None)
+
     def tick(self, view: View) -> List[Desire]:
         ret_desires = []
-        food_obj, direction_for_food = view.get_direction_for_thing(Food)
+        food_obj, direction_for_food = self.look_for_food(view)
 
         if direction_for_food and direction_for_food == CompassDirection.Center:
-            logger.debug("Person desires to eat!")
+            logger.debug(f"Person({self.id}) desires to eat!")
             ret_desires.append(EatDesire(self, food_obj))
         elif direction_for_food:
-            logger.debug("Person desires to move!")
+            logger.debug(f"Person({self.id}) sees food and wants it!")
             ret_desires.append(MoveDesire(self, direction_for_food))
+        else:
+            logger.debug(f"Person({self.id}) desires to move!")
+            ret_desires.append(MoveDesire(self, CompassDirection.get_random_direction()))
 
         return ret_desires
 
@@ -82,20 +96,16 @@ class Food(GameObject):
     def _init_attributes(self):
         self.MaxAmount = 5
         self.Amount = 5
-        self.RegenRate = 0.5
+        self.RegenRate = 0.05
 
     def tick(self, view: View) -> List[Desire]:
         if self.Amount < self.MaxAmount:
             self.Amount += self.MaxAmount * self.RegenRate
+        
+        return []
 
     def visible(self):
         return bool(self.Amount > (self.MaxAmount * 0.2))
 
 
-@dataclass(init=True)
-class View:
-    North: List = field(default_factory=list)
-    South: List = field(default_factory=list)
-    East: List = field(default_factory=list)
-    West: List = field(default_factory=list)
-    Center: List = field(default_factory=list)
+

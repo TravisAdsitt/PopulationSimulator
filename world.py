@@ -51,6 +51,10 @@ class LocationManager:
 
     def get_things_at_location(self, x: int, y: int):
         location_key = self.get_location_key(x, y)
+
+        if location_key not in self.locations:
+            self.locations[location_key] = []
+
         return self.locations[location_key]
 
     def add_thing(self, new_thing: GameObject, x: int, y: int):
@@ -96,9 +100,13 @@ class LocationManager:
         stepped_x, stepped_y = CompassDirection.step_coordinates_in_direction(
             x, y, direction, count
         )
+        classname = thing.__class__.__name__
+        id_str = ""
+        if isinstance(thing, GameObject):
+            id_str = f"({thing.id})"
 
         logger.debug(
-            f"Moving {thing.__name__} from ({x},{y}) to ({stepped_x},{stepped_y})"
+            f"Moving {classname}{id_str} from ({x},{y}) to ({stepped_x},{stepped_y})"
         )
 
         self.remove_thing(thing)
@@ -107,10 +115,10 @@ class LocationManager:
             self.add_thing(thing, stepped_x, stepped_y)
         except Exception:
             # If it is taken then go back to where we were
-            logger.debug(f"Couldn't move {thing.__name__}!")
+            logger.debug(f"Couldn't move {classname}!")
             self.add_thing(thing, x, y)
 
-        logger.debug(f"Moved {thing.__name__}!")
+        logger.debug(f"Moved {classname}!")
 
     def get_things_in_direction_from_thing(
         self, thing: GameObject, direction: CompassDirection, distance: int = 1
@@ -178,28 +186,8 @@ class World:
 
             for thing in things_to_remove:
                 curr_list.remove(thing)
-
-    def get_direction_for_thing_from_thing(
-        self, from_thing: GameObject, find: GameObject
-    ) -> Tuple[GameObject, CompassDirection] or Tuple[None, None]:
-
-        for thing in self.Center:
-            if find.__name__ == thing.__name__:
-                return (thing, CompassDirection.Center)
-        remaining_directions = [
-            (CompassDirection.North, self.North),
-            (CompassDirection.South, self.South),
-            (CompassDirection.East, self.East),
-            (CompassDirection.West, self.West),
-        ]
-        random.shuffle(remaining_directions)
-
-        for direction, thing_list in remaining_directions:
-            for thing in thing_list:
-                if find.__name__ == thing.__name__:
-                    return (thing, direction)
-
-        return (None, None)
+        
+        return view
 
     def get_view(self, thing: GameObject, distance: int) -> View:
         east = self.location_manager.get_things_in_direction_from_thing(
@@ -223,6 +211,9 @@ class World:
     def handle_desire(self, desire: Desire):
         desirer = desire.desirer
         if isinstance(desire, EatDesire):
+            if not isinstance(desire.food, Food):
+                return
+
             food_x, food_y = self.location_manager.get_thing_coordinates(desire.food)
             des_x, des_y = self.location_manager.get_thing_coordinates(desirer)
 
@@ -234,8 +225,10 @@ class World:
             ):
                 desirer.Stomach += 1
                 desire.food.Amount -= 1
+            
+            logger.debug(f"Person({desirer.id}) has eaten! (Stomach: {desirer.Stomach}, food.Amount: {desire.food.Amount})")
         elif isinstance(desire, MoveDesire):
-            pass
+            self.location_manager.move_thing_in_direction(desire.desirer, desire.direction, desire.count)
 
     def tick(self):
         desires = []
@@ -243,7 +236,7 @@ class World:
         for thing in self.location_manager.things.keys():
             if not isinstance(thing, GameObject):
                 continue
-            desires.extend(thing.tick(self.get_view(thing, 3)))
+            desires.extend(thing.tick(self.cull_invisible(self.get_view(thing, 3))))
 
         random.shuffle(desires)
 
@@ -277,4 +270,5 @@ if __name__ == "__main__":
 
     w = World()
 
-    w.tick()
+    for _ in range(0, 1000):
+        w.tick()
