@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List
+from dataclasses import dataclass, field
+import random
+from typing import List, Tuple
 from desires import Desire, EatDesire, MoveDesire
-from utils import CompassDirection, View
+from utils import CompassDirection
 import logging
 
 logger = logging.getLogger(__name__)
@@ -88,3 +90,12 @@ class Food(GameObject):
 
     def visible(self):
         return bool(self.Amount > (self.MaxAmount * 0.2))
+
+
+@dataclass(init=True)
+class View:
+    North: List = field(default_factory=list)
+    South: List = field(default_factory=list)
+    East: List = field(default_factory=list)
+    West: List = field(default_factory=list)
+    Center: List = field(default_factory=list)

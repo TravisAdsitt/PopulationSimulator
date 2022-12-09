@@ -2,10 +2,10 @@ from typing import Tuple
 import random
 import logging
 import argparse
-from desires import Desire, EatDesire, MoveDesire, TypesofDesire
+from desires import Desire, EatDesire, MoveDesire
 
-from game_objects import Food, GameObject, Person
-from utils import CompassDirection, View
+from game_objects import Food, GameObject, Person, View
+from utils import CompassDirection
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +163,44 @@ class World:
                     f"Added a {thing.__name__} at location ({str(random_x)},{str(random_y)})."
                 )
 
+    def cull_invisible(self, view: View):
+        lists_to_check = [view.North, view.South, view.East, view.West, view.Center]
+        for curr_list in lists_to_check:
+            things_to_remove = []
+
+            for thing in curr_list:
+                if not isinstance(thing, GameObject):
+                    things_to_remove.append(thing)
+                    continue
+                if not thing.visible():
+                    things_to_remove.append(thing)
+                    continue
+
+            for thing in things_to_remove:
+                curr_list.remove(thing)
+
+    def get_direction_for_thing_from_thing(
+        self, from_thing: GameObject, find: GameObject
+    ) -> Tuple[GameObject, CompassDirection] or Tuple[None, None]:
+
+        for thing in self.Center:
+            if find.__name__ == thing.__name__:
+                return (thing, CompassDirection.Center)
+        remaining_directions = [
+            (CompassDirection.North, self.North),
+            (CompassDirection.South, self.South),
+            (CompassDirection.East, self.East),
+            (CompassDirection.West, self.West),
+        ]
+        random.shuffle(remaining_directions)
+
+        for direction, thing_list in remaining_directions:
+            for thing in thing_list:
+                if find.__name__ == thing.__name__:
+                    return (thing, direction)
+
+        return (None, None)
+
     def get_view(self, thing: GameObject, distance: int) -> View:
         east = self.location_manager.get_things_in_direction_from_thing(
             thing, CompassDirection.East, distance
@@ -237,4 +275,6 @@ if __name__ == "__main__":
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    World()
+    w = World()
+
+    w.tick()
