@@ -236,7 +236,9 @@ class World:
         for thing in self.location_manager.things.keys():
             if not isinstance(thing, GameObject):
                 continue
-            desires.extend(thing.tick(self.cull_invisible(self.get_view(thing, 3))))
+            new_desires = thing.tick(self.cull_invisible(self.get_view(thing, 3)))
+            if new_desires:
+                desires.extend(new_desires)
 
         random.shuffle(desires)
 
@@ -270,5 +272,5 @@ if __name__ == "__main__":
 
     w = World()
 
-    for _ in range(0, 1000):
+    for _ in range(0, 200):
         w.tick()

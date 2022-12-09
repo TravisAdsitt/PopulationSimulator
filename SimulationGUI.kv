@@ -1,0 +1,39 @@
+#:kivy 2.1.0
+
+<SimulationViewport@Widget>
+    canvas:
+
+<SimulationController@Widget>
+    BoxLayout:
+        width: root.width
+        orientation: "horizontal"
+        BoxLayout:
+            orientation: "vertical"
+            
+            Slider:
+                id: num_people
+                min: 5
+                max: 100
+                step: 1
+                orientation: "horizontal"
+            Label:
+                text: str(num_people.value) + " People"
+            
+            Slider:
+                id: num_food
+                min: 5
+                max: 100
+                step: 1
+                orientation: "horizontal"
+            Label:
+                text: str(num_food.value) + " Food"
+
+        Button:
+            id: start_but
+            size_hint_x: .3
+            on_press: app.run_sim()
+            text: "Start Simulation"
+BoxLayout:
+    orientation: "vertical"
+    SimulationViewport:
+    SimulationController:
