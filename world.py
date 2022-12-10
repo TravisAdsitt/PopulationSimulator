@@ -3,11 +3,14 @@ import random
 import logging
 import argparse
 from desires import Desire, EatDesire, MoveDesire
-
+from kivy.logger import Logger
 from game_objects import Food, GameObject, Person, View
 from utils import CompassDirection
 
-logger = logging.getLogger(__name__)
+if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
+else:
+    logger = Logger
 
 
 class LocationManager:
@@ -27,6 +30,15 @@ class LocationManager:
         location_y = y % self.max_y
 
         return f"{location_x},{location_y}"
+
+    @classmethod
+    def location_key_to_coordinates(cls, location_key: str):
+        if "," not in location_key:
+            return None
+        
+        x, y = location_key.split(",")
+
+        return (int(x), int(y))
 
     def get_thing_coordinates(self, thing: GameObject):
         if thing not in self.things:
@@ -62,12 +74,13 @@ class LocationManager:
 
         if location_key not in self.locations:
             self.locations[location_key] = []
-        if new_thing not in self.things:
-            self.things[new_thing] = location_key
-
+        
         for thing in self.locations[location_key]:
             if type(thing) == type(new_thing):
                 raise Exception("Cannot place that there!")
+        
+        if new_thing not in self.things:
+            self.things[new_thing] = location_key
 
         self.locations[location_key].append(new_thing)
 
@@ -140,14 +153,20 @@ class LocationManager:
 
 
 class World:
-    def __init__(self):
-        self.world_width = 100
-        self.world_height = 100
+    def __init__(
+        self,
+        people_start: int,
+        food_start: int,
+        world_width: int = 100,
+        world_height: int = 100,
+    ):
+        self.world_width = world_width
+        self.world_height = world_height
 
         self.location_manager = LocationManager(self.world_width, self.world_height)
 
-        self.people_start = 5
-        self.food_start = 10
+        self.people_start = people_start
+        self.food_start = food_start
 
         self._init_world()
 
@@ -186,7 +205,7 @@ class World:
 
             for thing in things_to_remove:
                 curr_list.remove(thing)
-        
+
         return view
 
     def get_view(self, thing: GameObject, distance: int) -> View:
@@ -225,14 +244,20 @@ class World:
             ):
                 desirer.Stomach += 1
                 desire.food.Amount -= 1
-            
-            logger.debug(f"Person({desirer.id}) has eaten! (Stomach: {desirer.Stomach}, food.Amount: {desire.food.Amount})")
+
+            logger.debug(
+                f"Person({desirer.id}) has eaten! (Stomach: {desirer.Stomach}, food.Amount: {desire.food.Amount})"
+            )
         elif isinstance(desire, MoveDesire):
-            self.location_manager.move_thing_in_direction(desire.desirer, desire.direction, desire.count)
+            try:
+                self.location_manager.move_thing_in_direction(
+                    desire.desirer, desire.direction, desire.count
+                )
+            except Exception:
+                pass
 
     def tick(self):
         desires = []
-
         for thing in self.location_manager.things.keys():
             if not isinstance(thing, GameObject):
                 continue

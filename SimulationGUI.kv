@@ -1,9 +1,6 @@
 #:kivy 2.1.0
 
-<SimulationViewport@Widget>
-    canvas:
-
-<SimulationController@Widget>
+<SimulationController>
     BoxLayout:
         width: root.width
         orientation: "horizontal"
@@ -31,9 +28,6 @@
         Button:
             id: start_but
             size_hint_x: .3
-            on_press: app.run_sim()
+            on_press: app.run_sim(root.ids.num_people.value, root.ids.num_food.value)
             text: "Start Simulation"
-BoxLayout:
-    orientation: "vertical"
-    SimulationViewport:
-    SimulationController:
+
