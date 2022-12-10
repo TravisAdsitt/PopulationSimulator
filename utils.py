@@ -31,7 +31,7 @@ class CompassDirection(Enum):
     
     @classmethod
     def get_random_direction(cls):
-        return random.choice([cls.Center, cls.North, cls.South, cls.East, cls.West])
+        return random.choice([cls.North, cls.South, cls.East, cls.West])
 
 @dataclass(init=True)
 class View:

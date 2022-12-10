@@ -49,20 +49,32 @@ class GameObject(ABC):
 class MovableGameObject(GameObject):
     def __init__(self):
         self.Energy = 100
+        self.EnergyMax = 100
+        self.Metabolism = 0.5
+
         super().__init__()
 
     def moved(self, count: int = 1):
-        self.Energy -= 5 * count
+        self.Energy -= self.Metabolism * count
 
 
 class Person(MovableGameObject):
     def _init_attributes(self):
-        self.HP = 100
-        self.Stomach = 100
+        self.StomachMax = 100
+        self.Stomach = self.StomachMax
+        
         self.Metabolism = 0.2
 
+    @property
+    def alive(self):
+        if self.Energy > 0 or self.Stomach > 0:
+            return True
+        else:
+            return False
+
+
     def look_for_food(self, view: View):
-        list_of_directions_and_things = view.shuffle_all_but_center()
+        list_of_directions_and_things = [(CompassDirection.Center, view.Center), (CompassDirection.North, view.North), (CompassDirection.South, view.South), (CompassDirection.East, view.East), (CompassDirection.West, view.West)]
         
         for direction, thing_list in list_of_directions_and_things:
             for thing in thing_list:
@@ -75,6 +87,19 @@ class Person(MovableGameObject):
     def tick(self, view: View) -> List[Desire]:
         ret_desires = []
         food_obj, direction_for_food = self.look_for_food(view)
+        
+        if self.Energy < self.EnergyMax and self.Stomach > 0:
+            remaining_stomach = self.Stomach
+            energy_ullage = self.EnergyMax - self.Energy
+
+            exchanged_value = min([remaining_stomach, energy_ullage])
+
+            self.Stomach -= exchanged_value
+            self.Energy += exchanged_value
+
+        if self.Energy <= 0:
+            self.Energy = 0
+            return ret_desires
 
         if direction_for_food and direction_for_food == CompassDirection.Center:
             logger.debug(f"Person({self.id}) desires to eat!")
@@ -94,9 +119,9 @@ class Person(MovableGameObject):
 
 class Food(GameObject):
     def _init_attributes(self):
-        self.MaxAmount = 5
-        self.Amount = 5
-        self.RegenRate = 0.05
+        self.MaxAmount = 100
+        self.Amount = self.MaxAmount
+        self.RegenRate = 0.01
 
     def tick(self, view: View) -> List[Desire]:
         if self.Amount < self.MaxAmount:

@@ -5,7 +5,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
-from game_objects import Food
+from game_objects import Food, Person
 from world import World, LocationManager
 from kivy.logger import Logger, LOG_LEVELS
 
@@ -56,24 +56,30 @@ class SimulationGUIApp(App):
 
         block_width = screen_width // world_width
         block_height = screen_height // world_height
-        
-        locations = self.current_simulation.location_manager.locations
 
         self.sim_view.canvas.clear()
 
-        locations = self.current_simulation.location_manager.locations
+        location_manager = self.current_simulation.location_manager
+        things = location_manager.things
 
-        for location in locations:
-            if not locations[location]:
-                continue
-            
-            x,  y = LocationManager.location_key_to_coordinates(location)
+        color_floor = 0.3
+
+        for thing in things:
+            x,  y = location_manager.get_thing_coordinates(thing)
 
             with self.sim_view.canvas:
-                if isinstance(locations[location][0], Food):
-                    Color(0.,1.,0.)
-                else:
-                    Color(1.,0.,0.)
+                if isinstance(thing, Food):
+                    color_strength = thing.Amount / thing.MaxAmount
+                    color_strength = max([color_floor, color_strength])
+
+                    Color(0.,color_strength,0.)
+                elif isinstance(thing, Person):
+                    color_strength = thing.Energy / thing.EnergyMax
+                    color_strength = max(color_floor, color_strength)
+                    if thing.alive:
+                        Color(color_strength,0.,0.)
+                    else:
+                        Color(0.,0.,1.)
                 
                 pos_screen_x = x * block_width + self.sim_view.pos[0]
                 pos_screen_y = y * block_height + self.sim_view.pos[1]

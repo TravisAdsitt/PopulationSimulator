@@ -4,7 +4,7 @@ import logging
 import argparse
 from desires import Desire, EatDesire, MoveDesire
 from kivy.logger import Logger
-from game_objects import Food, GameObject, Person, View
+from game_objects import Food, GameObject, MovableGameObject, Person, View
 from utils import CompassDirection
 
 if __name__ == "__main__":
@@ -144,10 +144,10 @@ class LocationManager:
         x, y = self.get_thing_coordinates(thing)
 
         for _ in range(distance):
-            new_x, new_y = CompassDirection.step_coordinates_in_direction(
+            x, y = CompassDirection.step_coordinates_in_direction(
                 x, y, direction
             )
-            ret_val.extend(self.get_things_at_location(new_x, new_y))
+            ret_val.extend(self.get_things_at_location(x, y))
 
         return ret_val
 
@@ -225,6 +225,8 @@ class World:
             *self.location_manager.get_thing_coordinates(thing)
         )
 
+
+
         return View(north, south, east, west, center)
 
     def handle_desire(self, desire: Desire):
@@ -240,21 +242,32 @@ class World:
                 isinstance(desirer, Person)
                 and food_x == des_x
                 and food_y == des_y
-                and desire.food.Amount >= 1
             ):
-                desirer.Stomach += 1
-                desire.food.Amount -= 1
+                stomach_ullage = desirer.StomachMax - desirer.Stomach
+                food_available = desire.food.Amount
 
-            logger.debug(
-                f"Person({desirer.id}) has eaten! (Stomach: {desirer.Stomach}, food.Amount: {desire.food.Amount})"
-            )
+                selected_amount = min([stomach_ullage, food_available])
+
+                desirer.Stomach += selected_amount
+                desire.food.Amount -= selected_amount
+
+                logger.debug(
+                    f"Person({desirer.id}) has eaten! (Stomach: {desirer.Stomach}, food.Amount: {desire.food.Amount}, selected_amount: {selected_amount})"
+                )
         elif isinstance(desire, MoveDesire):
+            if not isinstance(desire.desirer, MovableGameObject):
+                return
+            
+            moved = True
             try:
                 self.location_manager.move_thing_in_direction(
                     desire.desirer, desire.direction, desire.count
                 )
             except Exception:
-                pass
+                moved = False
+            
+            if moved:
+                desire.desirer.moved(desire.count)
 
     def tick(self):
         desires = []
