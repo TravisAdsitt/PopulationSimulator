@@ -21,22 +21,24 @@ class MainScreen(BoxLayout):
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
         self.orientation = "vertical"
-        
-        self.sim_view = SimulationViewport(size_hint=(1,.7), pos=(100,50))
+        self.size_hint = (1.,1.)
+
+        self.sim_view = SimulationViewport()
+        self.sim_cont = SimulationController(size_hint=(1.,.3))
         
         self.add_widget(self.sim_view)
-        self.add_widget(SimulationController(size_hint=(1, .3)))
+        self.add_widget(self.sim_cont)
 
 class SimulationGUIApp(App):
     def build(self):
-        main_screen = MainScreen(size=(1000,1000))
+        main_screen = MainScreen()
 
         self.sim_view = main_screen.sim_view
 
         return main_screen
         
-    def run_sim(self, num_people: int, num_food: int):
-        self.current_simulation = World(num_people, num_food)
+    def run_sim(self, num_people: int, num_food: int, grid_height: int, grid_width: int):
+        self.current_simulation = World(num_people, num_food, grid_width, grid_height)
         self.current_sim_event = Clock.schedule_interval(self.tick_sim, 1/30)
     
     def tick_sim(self, dt):

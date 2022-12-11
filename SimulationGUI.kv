@@ -3,9 +3,28 @@
 <SimulationController>
     BoxLayout:
         width: root.width
+        height: root.height
         orientation: "horizontal"
         BoxLayout:
             orientation: "vertical"
+
+            Slider:
+                id: grid_height
+                min: 25
+                max: int(root.height)
+                step: 1
+                orientation: "horizontal"
+            Label:
+                text: str(grid_height.value) + " Map Height"
+            
+            Slider:
+                id: grid_width
+                min: 25
+                max: int(root.width)
+                step: 1
+                orientation: "horizontal"
+            Label:
+                text: str(grid_width.value) + " Map Width"
             
             Slider:
                 id: num_people
@@ -27,7 +46,6 @@
 
         Button:
             id: start_but
-            size_hint_x: .3
-            on_press: app.run_sim(root.ids.num_people.value, root.ids.num_food.value)
+            on_press: app.run_sim(root.ids.num_people.value, root.ids.num_food.value, root.ids.grid_height.value, root.ids.grid_width.value)
             text: "Start Simulation"
 
